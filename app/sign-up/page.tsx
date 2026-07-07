@@ -48,7 +48,7 @@ const Page = () => {
 
   useEffect(() => {
     if (isSignedIn) {
-      router.push("/community");
+      router.push("/paw-connect");
     }
   }, [isSignedIn, router]);
   return (
