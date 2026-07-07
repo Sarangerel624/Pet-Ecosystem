@@ -1,0 +1,284 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdoptionFormStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+ 
+enum Location {
+  ULAANBAATAR
+  ARKHANGAI
+  BAYANKHONGOR
+  BAYAN_OLGII
+  BULGAN
+  GOVI_ALTAI
+  GOVI_SUMBER
+  DARKHAN
+  DORNOD
+  DORNOGOVI
+  DUNDGOVI
+  ZAVKHAN
+  ORKHON
+  UVURKHANGAI
+  UMNUGOVI
+  SUKHBAATAR
+  SELENGE
+  TUV
+  UVS
+  KHOVD
+  KHUVSGUL
+}
+enum Answer {
+  Yes
+  No
+  Unknown
+}
+ 
+enum Level {
+  High
+  Low
+  Medium
+}
+
+enum AdoptStatus {
+  TEMPORARY
+  PERMANENT
+}
+
+enum Type {
+  Cat
+  Dog
+}
+ 
+enum Gender {
+  MALE
+  FEMALE
+}
+ 
+enum ReactionType {
+  LIKE
+  DISLIKE
+}
+ 
+enum ChatRole {
+  USER
+  AI
+}
+
+enum WalkStatus {
+  OPEN
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id         String   @id @default(nanoid())
+  firstName  String
+  lastName   String
+  email      String   @unique
+  profileImg String?
+  createdAt  DateTime @default(now())
+  clerkId        String      @unique
+  pet           Pet[]
+  lostPosts     LostAnimal[]
+  adoptPosts    AdoptAnimal[]
+  comments      Comment[]
+  messages      Message[]
+  reactions     Reaction[]
+  conversations Conversation[]
+  adoptionForms AdoptionForm[]
+  experiences   ExperienceExchange[]
+  AiChat AIChat[]
+  dogWalkss DogWalk[] @relation("DogOwner")
+  dogWalks DogWalk[] @relation("DogWalker")
+}
+ 
+model Pet {
+  id         String  @id @default(nanoid())
+  name       String
+  breed      String
+  gender     Gender
+  age        Int
+  petImg     String[]
+  healthInfo String?
+  ownerId    String
+  owner      User    @relation(fields: [ownerId], references: [id])
+
+  dogWalks DogWalk[]
+}
+ 
+model LostAnimal {
+  id          String     @id @default(nanoid())
+  location    String
+  description String
+  phoneNumber String?
+  images      String[]
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  comments  Comment[]
+  reactions Reaction[]
+  createdAt DateTime @default(now())
+}
+ 
+model Comment {
+  id      String @id @default(nanoid())
+  content String
+  images  String[]
+  userId String
+  parentCommentId String?
+  parent Comment? @relation("Thread", fields : [parentCommentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("Thread")
+  user   User   @relation(fields: [userId], references: [id])
+  lostPostId String?
+  lostPost   LostAnimal? @relation(fields: [lostPostId], references: [id], onDelete: Cascade)
+  adoptPostId String?
+  adoptPost   AdoptAnimal? @relation(fields: [adoptPostId], references: [id], onDelete: Cascade)
+  experienceId String?
+  experience   ExperienceExchange? @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+  createdAt DateTime @default(now())
+}
+ 
+model Reaction {
+  id   String       @id @default(nanoid())
+  type      ReactionType
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  lostPostId String?
+  lostPost   LostAnimal? @relation(fields: [lostPostId], references: [id], onDelete: Cascade)
+ 
+  commentId String?
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  experienceId String?
+  experience   ExperienceExchange? @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+ 
+  @@unique([userId, commentId])
+}
+ 
+model AdoptAnimal {
+  id          String      @id @default(nanoid())
+  description String
+  name String
+  age String
+  breed String
+  animalType Type
+  gender Gender
+  sterilized Answer
+  CatFriendly Answer
+  DogFriendly Answer
+  KidFriendly  Answer
+  AggressionLevel Level
+  AggressionNote  String?  
+  personality String?
+  healthInfo String?
+  images      String[]
+  status      AdoptStatus
+  temporaryEnd DateTime?
+  userId      String  
+  user        User        @relation(fields: [userId], references: [id])
+  comments    Comment[]
+  adoptionForms AdoptionForm[]
+  createdAt DateTime @default(now())
+}
+model AdoptionForm {
+  id             String      @id @default(nanoid())
+  age            Int
+  firstName      String
+  lastName       String
+  phoneNumber    String
+  secondaryPhone String?
+  location       Location
+  district       String
+  address        String?
+  email          String
+  hasPet         Boolean
+  petInfo        String?
+  petId          String
+  pet            AdoptAnimal @relation(fields: [petId], references: [id])
+  notes          String?
+  status         AdoptionFormStatus @default(PENDING)  
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+}
+ 
+model ExperienceExchange {
+  id String @id @default(nanoid())
+ 
+  description String
+  images      String[]
+ 
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+ 
+  comments  Comment[]
+  reactions Reaction[]
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id        String    @id @default(nanoid())
+  users     User[]
+  messages  Message[]
+  createdAt DateTime  @default(now())
+}
+ 
+model Message {
+  id      String @id @default(nanoid())
+  content String
+ 
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+ 
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+ 
+  createdAt DateTime @default(now())
+}
+ 
+ 
+model AIChat {
+  id        String    @id @default(nanoid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model DogWalk {
+  id          String   @id @default(nanoid())
+  ownerId     String
+  owner       User     @relation("DogOwner", fields: [ownerId], references: [id])
+  walkerId    String?
+  walker      User?    @relation("DogWalker", fields: [walkerId], references: [id])
+  dogId        String
+  dog         Pet      @relation(fields: [dogId], references: [id])
+  location     String
+  walkTime     DateTime
+  duration     Int     
+  price        Float
+  notes        String?
+  status       WalkStatus @default(OPEN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
